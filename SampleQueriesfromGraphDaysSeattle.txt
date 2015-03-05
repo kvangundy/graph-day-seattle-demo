@@ -1,0 +1,52 @@
+//Sample Queries from GraphDays
+//
+//Who does Steven report to?
+MATCH (x:Employee {firstName:'Steven'})-[r:REPORTS_TO]->(y)
+RETURN x,r,y;
+//
+//Who do people report to?
+MATCH
+ (e:Employee)<-[:REPORTS_TO]-(sub:Employee)
+RETURN
+  e.employeeID AS managerID,
+  e.firstName AS managerName,
+  sub.employeeID AS employeeID,
+  sub.firstName AS employeeName;
+  //
+  //Who are whose indirect reports
+  //
+  MATCH path = (e:Employee)<-[:REPORTS_TO*]-(sub)
+  WITH  e, sub,
+  [person in NODES(path) | person.employeeID][1..-1] AS path
+  RETURN
+  e.employeeID AS managerID,
+  e.firstName AS managerName,
+  sub.employeeID AS employeeID,
+  sub.firstName AS employeeName,
+  CASE
+    WHEN LENGTH(path) = 0
+      THEN "Direct Report"
+    ELSE path END AS via
+  ORDER BY LENGTH(path);
+//
+//What products are typcally sold together?
+MATCH
+  (choc:Product {productName: 'Chocolade'})
+   <-[:PRODUCT]-(:Order)<-[:SOLD]-(employee),
+  (employee)-[:SOLD]->(o2)-[:PRODUCT]->(other:Product)
+RETURN
+  employee.firstName, other.productName, count(distinct o2) as count
+ORDER BY
+  count DESC
+LIMIT 5;
+//
+//What products are rarely sold together?
+MATCH
+  (choc:Product {productName: 'Chocolade'})
+   <-[:PRODUCT]-(:Order)<-[:SOLD]-(employee),
+  (employee)-[:SOLD]->(o2)-[:PRODUCT]->(other:Product)
+RETURN
+  employee.firstName, other.productName, count(distinct o2) as count
+ORDER BY
+  count ASC
+LIMIT 5;
